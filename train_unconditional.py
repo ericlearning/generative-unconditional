@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from dataset import Dataset
 from architectures.unconditional import DCGAN_D, DCGAN_G
-from architectures.unconditional import ResNetGan_D, ResNetGan_G
+from architectures_experimental.unconditional import ResNetGan_D, ResNetGan_G
 from trainers.trainer_sgan import Trainer_SGAN
 from trainers.trainer_wgan import Trainer_WGAN
 from trainers.trainer_wgan_gp import Trainer_WGAN_GP
