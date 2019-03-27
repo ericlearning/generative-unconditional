@@ -48,6 +48,10 @@ This repo has PyTorch implementations of training a Gan.
  
 Gans, Conditional Gans, Img2Img mostly has options to chose normalization type, such as batchnorm, instancenorm, spectralnorm.
 
+## Training
+### Progressive Gan
+[![PGGAN Training](https://img.youtube.com/vi/WUYDf0E7e9Q/0.jpg)](https://www.youtube.com/watch?v=WUYDf0E7e9Q)
+
 ## TODO
 - [x] Add Spectral Normalization
 - [x] Implement Progressive Gan
