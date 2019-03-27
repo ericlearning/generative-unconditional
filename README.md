@@ -37,8 +37,8 @@ The trainers above all work perfectly.
 - [x] Add Spectral Normalization
 - [x] Implement Progressive Gan
 - [x] Implement Pix2PixHD
-- [] Add trained results
-- [] make the losses into a function and put them in a single file (code cleaning)
-- [] Implement BicycleGan (multimodal Pix2Pix)
-- [] Improve README
-- [] Implement StyleGAN
+- [ ] Add trained results
+- [ ] make the losses into a function and put them in a single file (code cleaning)
+- [ ] Implement BicycleGan (multimodal Pix2Pix)
+- [ ] Improve README
+- [ ] Implement StyleGAN
