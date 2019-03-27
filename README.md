@@ -1,7 +1,7 @@
 # Generative-learning
 A python library for generative learning methods with PyTorch.
 
-## List of Implementations
+## List of Trainers Available
 This repo has PyTorch implementations of training a Gan.
 - Trainers for Unconditional Gans
   - sgan
@@ -31,7 +31,22 @@ This repo has PyTorch implementations of training a Gan.
   - rahingegan
   - wgan-gp
   
-The trainers above all work perfectly.
+## List of Architectures Available
+- Gans
+ - Deconv DCGAN
+ - PixelShuffle DCGAN
+ - ResizeConv DCGAN
+- Conditional Gans
+ - Deconv DCGAN (with label)
+- Img2Img (Pix2Pix, Pix2PixHD, CycleGan)
+ - U-Net (Pix2Pix)
+ - ResNetGan (Pix2Pix)
+ - PatchGAN (70x70)
+ - PatchGAN (286x286)
+- Progressive Gan
+ - Progressive Architecture
+ 
+Gans, Conditional Gans, Img2Img mostly has options to chose normalization type, such as batchnorm, instancenorm, spectralnorm.
 
 ## TODO
 - [x] Add Spectral Normalization
