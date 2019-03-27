@@ -51,7 +51,8 @@ Gans, Conditional Gans, Img2Img mostly has options to chose normalization type, 
 ## Training
 ### Progressive Gan
 [![PGGAN Training](https://img.youtube.com/vi/WUYDf0E7e9Q/0.jpg)](https://www.youtube.com/watch?v=WUYDf0E7e9Q)
-The code for this training had some errors in the code, the training video will be updated soon.
+
+The code for this training had some errors in the code, the new training video will be updated soon.
 
 ## TODO
 - [x] Add Spectral Normalization
