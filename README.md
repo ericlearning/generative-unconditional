@@ -54,6 +54,10 @@ Gans, Conditional Gans, Img2Img mostly has options to chose normalization type, 
 
 The code for this training had some errors in the code, the new training video will be updated soon.
 
+[![Pix2PixHD Training](https://img.youtube.com/vi/o7rx6FV0eMw/0.jpg)](https://www.youtube.com/watch?v=o7rx6FV0eMw)
+
+Pix2PixHD Trained on edge2shoe dataset as you see, around 0:20 the dimension changes, which is where the Local Network gets added to the network and training begins. Around 0:41, the entire network will start finetuning.
+
 ## TODO
 - [x] Add Spectral Normalization
 - [x] Implement Progressive Gan
