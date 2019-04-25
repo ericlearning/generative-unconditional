@@ -224,7 +224,7 @@ class PatchGan_D_70x70(nn.Module):
 		self.conv1 = ConvBlock(self.ic_1 + self.ic_2, 64, 4, 2, 1, use_bn = False, activation_type = 'leakyrelu')
 		self.conv2 = ConvBlock(64, 128, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv3 = ConvBlock(128, 256, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
-		self.conv4 = ConvBlock(256, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
+		self.conv4 = ConvBlock(256, 512, 4, 1, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv5 = nn.Conv2d(512, 1, 4, 1, 1, bias = False)
 		self.sigmoid = nn.Sigmoid()
 		self.nothing = Nothing()
@@ -247,7 +247,7 @@ class PatchGan_D_70x70(nn.Module):
 		out4 = self.conv4(out3)
 		# (bs, 512, 31, 31)
 		out5 = self.conv5(out4)
-		# (bs, 512, 30, 30)
+		# (bs, 1, 30, 30)
 		if(self.use_sigmoid == True):
 			out = self.sigmoid(out5)
 		else:
@@ -268,7 +268,7 @@ class PatchGan_D_70x70_One_Input(nn.Module):
 		self.conv1 = ConvBlock(self.ic, 64, 4, 2, 1, use_bn = False, activation_type = 'leakyrelu')
 		self.conv2 = ConvBlock(64, 128, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv3 = ConvBlock(128, 256, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
-		self.conv4 = ConvBlock(256, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
+		self.conv4 = ConvBlock(256, 512, 4, 1, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv5 = nn.Conv2d(512, 1, 4, 1, 1, bias = False)
 		self.sigmoid = nn.Sigmoid()
 		self.nothing = Nothing()
@@ -291,7 +291,7 @@ class PatchGan_D_70x70_One_Input(nn.Module):
 		out4 = self.conv4(out3)
 		# (bs, 512, 31, 31)
 		out5 = self.conv5(out4)
-		# (bs, 512, 30, 30)
+		# (bs, 1, 30, 30)
 		if(self.use_sigmoid == True):
 			out = self.sigmoid(out5)
 		else:
@@ -315,7 +315,7 @@ class PatchGan_D_286x286(nn.Module):
 		self.conv3 = ConvBlock(128, 256, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv4 = ConvBlock(256, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv5 = ConvBlock(512, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
-		self.conv6 = ConvBlock(512, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
+		self.conv6 = ConvBlock(512, 512, 4, 1, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv7 = nn.Conv2d(512, 1, 4, 1, 1, bias = False)
 		self.sigmoid = nn.Sigmoid()
 		self.nothing = Nothing()
@@ -342,7 +342,7 @@ class PatchGan_D_286x286(nn.Module):
 		out6 = self.conv6(out5)
 		# (bs, 512, 7, 7)
 		out7 = self.conv7(out6)
-		# (bs, 512, 6, 6)
+		# (bs, 1, 6, 6)
 		if(self.use_sigmoid == True):
 			out = self.sigmoid(out7)
 		else:
@@ -364,7 +364,7 @@ class PatchGan_D_286x286_One_Input(nn.Module):
 		self.conv3 = ConvBlock(128, 256, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv4 = ConvBlock(256, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv5 = ConvBlock(512, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
-		self.conv6 = ConvBlock(512, 512, 4, 2, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
+		self.conv6 = ConvBlock(512, 512, 4, 1, 1, use_bn = True, norm_type = norm_type, activation_type = 'leakyrelu')
 		self.conv7 = nn.Conv2d(512, 1, 4, 1, 1, bias = False)
 		self.sigmoid = nn.Sigmoid()
 		self.nothing = Nothing()
@@ -391,7 +391,7 @@ class PatchGan_D_286x286_One_Input(nn.Module):
 		out6 = self.conv6(out5)
 		# (bs, 512, 7, 7)
 		out7 = self.conv7(out6)
-		# (bs, 512, 6, 6)
+		# (bs, 1, 6, 6)
 		if(self.use_sigmoid == True):
 			out = self.sigmoid(out7)
 		else:
@@ -484,7 +484,10 @@ class UNet_G(nn.Module):
 					else:
 						out = self.dropout(cur_dec(self.relu(torch.cat([out, cur_enc], 1))))
 			else:
-				out = cur_dec(self.relu(torch.cat([out, cur_enc], 1)))
+				if(i == 0):
+					out = cur_dec(self.relu(cur_enc))
+				else:
+					out = cur_dec(self.relu(torch.cat([out, cur_enc], 1)))
 		del ens
 		out = self.tanh(out)
 		return out

@@ -16,7 +16,7 @@ class EqualizedConv(nn.Module):
 		self.pad = pad
 		self.use_bias = use_bias
 
-		self.weight = nn.Parameter(nn.init.kaiming_normal(
+		self.weight = nn.Parameter(nn.init.normal_(
 			torch.empty(self.no, self.ni, self.ks, self.ks)
 		))
 		if(self.use_bias):
@@ -85,7 +85,7 @@ class UpSample(nn.Module):
 		super(UpSample, self).__init__()
 
 	def forward(self, x):
-		return F.interpolate(x, None, 2, 'nearest')
+		return F.interpolate(x, None, 2, 'bilinear', align_corners=True)
 
 class DownSample(nn.Module):
 	def __init__(self):
