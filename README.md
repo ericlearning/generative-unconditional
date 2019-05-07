@@ -1,6 +1,5 @@
-# Generative-learning
+<!-- # Generative-learning
 A python library for generative learning methods with PyTorch.
-
 ## List of Trainers Available
 This repo has PyTorch implementations of training a Gan.
 - Trainers for Unconditional Gans
@@ -30,7 +29,6 @@ This repo has PyTorch implementations of training a Gan.
   - ralsgan
   - rahingegan
   - wgan-gp
-  
 ## List of Architectures Available
 - Gans
  - Deconv DCGAN
@@ -45,25 +43,17 @@ This repo has PyTorch implementations of training a Gan.
  - PatchGAN (286x286)
 - Progressive Gan
  - Progressive Architecture
- 
 Gans, Conditional Gans, Img2Img mostly has options to chose normalization type, such as batchnorm, instancenorm, spectralnorm.
-
 ## Training
 ### Progressive Gan
 [![PGGAN Training](https://img.youtube.com/vi/WUYDf0E7e9Q/0.jpg)](https://www.youtube.com/watch?v=WUYDf0E7e9Q)
-
 The code for this training had some errors in the code, the new training video will be updated soon.
-
 ### Pix2Pix
 [![Pix2Pix Training](https://img.youtube.com/vi/QnggTk63qH4/0.jpg)](https://www.youtube.com/watch?v=QnggTk63qH4)
-
 Pix2Pix Trained on edge2shoe dataset. Because of the U-Net architecture, it trains faster than Pix2PixHD, and seems to converge faster, but in my opinion Pix2PixHD seems to have better generalized results, and less artifacts.
-
 ### Pix2PixHD
 [![Pix2PixHD Training](https://img.youtube.com/vi/o7rx6FV0eMw/0.jpg)](https://www.youtube.com/watch?v=o7rx6FV0eMw)
-
 Pix2PixHD Trained on edge2shoe dataset as you see, around 0:20 the dimension changes, which is where the Local Network gets added to the network and training begins. Around 0:41, the entire network will start finetuning. (Since Pix2PixHD's biggest advantage is that it trains on very high resolutions, I'll later upload Pix2PixHD trained on CityScapes dataset.)
-
 ## TODO
 - [x] Add Spectral Normalization
 - [x] Implement Progressive Gan
@@ -75,3 +65,4 @@ Pix2PixHD Trained on edge2shoe dataset as you see, around 0:20 the dimension cha
 - [ ] Improve README
 - [ ] Implement StyleGAN
 - [ ] Implement SPADE
+-->
