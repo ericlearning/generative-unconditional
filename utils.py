@@ -72,6 +72,15 @@ def plot_multiple_images(images, h, w):
 	plt.show()
 	return fig
 
+def get_display_samples(samples, num_samples_x, num_samples_y):
+	sz = samples[0].shape[0]
+	nc = samples[0].shape[2]
+	display = np.zeros((sz*num_samples_x, sz*num_samples_y, nc))
+	for i in range(num_samples_y):
+		for j in range(num_samples_x):
+			display[i*sz:(i+1)*sz, j*sz:(j+1)*sz, :] = cv2.cvtColor(samples[i*num_samples_x+j]*255.0, cv2.COLOR_BGR2RGB)
+	return display.astype(np.uint8)
+
 def plot_multiple_spectrograms(audios, h, w, freq):
 	fig = plt.figure(figsize=(8, 8))
 	for i in range(1, h*w+1):
@@ -117,7 +126,7 @@ def get_sample_images_list(mode, inputs):
 		with torch.no_grad():
 			sample_fake_images = netG(fixed_noise).detach().cpu().numpy()
 			sample_images_list = []
-			for j in range(16):
+			for j in range(49):
 				cur_img = (sample_fake_images[j] + 1) / 2.0
 				sample_images_list.append(cur_img.transpose(1, 2, 0))
 
@@ -126,7 +135,7 @@ def get_sample_images_list(mode, inputs):
 		with torch.no_grad():
 			sample_fake_images = netG(fixed_noise).detach().cpu().numpy()
 			sample_images_list = []
-			for j in range(16):
+			for j in range(49):
 				cur_audio = (sample_fake_images[j] * 32768.0).astype(np.int16)
 				sample_images_list.append(cur_audio)
 

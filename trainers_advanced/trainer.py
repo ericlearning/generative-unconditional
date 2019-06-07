@@ -1,4 +1,4 @@
-import os
+import os, cv2
 import copy
 import torch
 import torch.nn as nn
@@ -9,21 +9,22 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
-from utils import set_lr, get_lr, generate_noise, plot_multiple_images, plot_multiple_spectrograms, save_fig, save, get_sample_images_list
-from losses
+from utils import set_lr, get_lr, generate_noise, plot_multiple_images, plot_multiple_spectrograms, save_fig, save, get_sample_images_list, get_display_samples
+from losses.losses import SGAN, LSGAN, HINGEGAN, WGAN, RASGAN, RALSGAN, RAHINGEGAN, QPGAN
 
 class Trainer():
-	def __init__(self, loss_type, netD, netG, device, train_dl, lr_D = 0.0002, lr_G = 0.0002, resample = False, weight_clip = None, use_graident_penalty = False, loss_interval = 50, image_interval = 50, save_img_dir = 'saved_images/'):
+	def __init__(self, loss_type, netD, netG, device, train_dl, lr_D = 0.0002, lr_G = 0.0002, resample = False, weight_clip = None, use_gradient_penalty = False, loss_interval = 50, image_interval = 50, save_img_dir = 'saved_images/'):
 		self.loss_type = loss_type
+		self.loss_dict = {'SGAN':SGAN, 'LSGAN':LSGAN, 'HINGEGAN':HINGEGAN, 'WGAN':WGAN, 'RASGAN':RASGAN, 'RALSGAN':RALSGAN, 'RAHINGEGAN':RAHINGEGAN, 'QPGAN':QPGAN}
 		if(loss_type == 'SGAN' or loss_type == 'LSGAN' or loss_type == 'HINGEGAN' or loss_type == 'WGAN'):
 			self.require_type = 0
-			self.loss = getattr(losses, self.loss_type)(device)
+			self.loss = self.loss_dict[self.loss_type](device)
 		elif(loss_type == 'RASGAN' or loss_type == 'RALSGAN' or loss_type == 'RAHINGEGAN'):
 			self.require_type = 1
-			self.loss = getattr(losses, self.loss_type)(device)
+			self.loss = self.loss_dict[self.loss_type](device)
 		elif(loss_type == 'QPGAN'):
 			self.require_type = 2
-			self.loss = getattr(losses, self.loss_type)(device, 'L1')
+			self.loss = self.loss_dict[self.loss_type](device, 'L1')
 		else:
 			self.require_type = -1
 
@@ -35,6 +36,8 @@ class Trainer():
 		self.train_iteration_per_epoch = len(self.train_dl)
 		self.device = device
 		self.resample = resample
+		self.weight_clip = weight_clip
+		self.use_gradient_penalty = use_gradient_penalty
 		self.special = None
 
 		self.optimizerD = optim.Adam(self.netD.parameters(), lr = self.lr_D, betas = (0, 0.9))
@@ -44,7 +47,7 @@ class Trainer():
 		self.fake_label = 0
 		self.nz = self.netG.nz
 
-		self.fixed_noise = generate_noise(16, self.nz, self.device)
+		self.fixed_noise = generate_noise(49, self.nz, self.device)
 		self.loss_interval = loss_interval
 		self.image_interval = image_interval
 
@@ -88,7 +91,7 @@ class Trainer():
 				elif(self.require_type == 2):
 					errD = self.loss.d_loss(c_xr, c_xf, real_images, fake_images)
 				
-				if(self.use_graident_penalty != False):
+				if(self.use_gradient_penalty != False):
 					errD += self.use_gradient_penalty * self.gradient_penalty(real_images, fake_images)
 
 				errD.backward()
@@ -127,22 +130,16 @@ class Trainer():
 				if(i % self.image_interval == 0):
 					if(self.special == None):
 						sample_images_list = get_sample_images_list('Unsupervised', (self.fixed_noise, self.netG))
-						plot_fig = plot_multiple_images(sample_images_list, 4, 4)
+						plot_img = get_display_samples(sample_images_list, 7, 7)
 						cur_file_name = os.path.join(self.save_img_dir, str(self.save_cnt)+' : '+str(epoch)+'-'+str(i)+'.jpg')
 						self.save_cnt += 1
-						save_fig(cur_file_name, plot_fig)
-						plot_fig.clf()
+						cv2.imwrite(cur_file_name, plot_img)
 
 					elif(self.special == 'Wave'):
 						sample_audios_list = get_sample_images_list('Unsupervised_Audio', (self.fixed_noise, self.netG))
-						plot_fig = plot_multiple_spectrograms(sample_audios_list, 4, 4, freq = 16000)
+						plot_fig = plot_multiple_spectrograms(sample_audios_list, 7, 7, freq = 16000)
 						cur_file_name = os.path.join(self.save_img_dir, str(self.save_cnt)+' : '+str(epoch)+'-'+str(i)+'.jpg')
 						self.save_cnt += 1
 						save_fig(cur_file_name, plot_fig)
 						plot_fig.clf()
-
-				if(self.snapshot_interval is not None):
-					if(i % self.snapshot_interval == 0):
-						save(os.path.join(self.save_snapshot_dir, 'Epoch' + str(epoch) + '_' + str(i) + '.state'), self.netD, self.netG, self.optimizerD, self.optimizerG)
-
-
+						
