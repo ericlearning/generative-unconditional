@@ -5,14 +5,7 @@ from dataset import Dataset
 from architectures.architecture_dcgan import DCGAN_D, DCGAN_G
 from architectures.architecture_resnet import ResNetGan_D, ResNetGan_G
 from architectures.architecture_wavegan import Wave_D, Wave_G
-from trainers.trainer_sgan import Trainer_SGAN
-from trainers.trainer_wgan import Trainer_WGAN
-from trainers.trainer_wgan_gp import Trainer_WGAN_GP
-from trainers.trainer_lsgan import Trainer_LSGAN
-from trainers.trainer_rasgan import Trainer_RASGAN
-from trainers.trainer_ralsgan import Trainer_RALSGAN
-from trainers.trainer_rahingegan import Trainer_RAHINGEGAN
-from trainers.trainer_hingegan import Trainer_HINGEGAN
+from trainers.trainer import Trainer
 from utils import save, load
 
 dir_name = 'data/celeba'
@@ -37,7 +30,19 @@ netG = DCGAN_G(sz, nz, nc, ngf).to(device)
 
 trn_dl = data.get_loader(sz, bs)
 # trn_dl = data.get_loader(None, bs, audio_sample_num = sample_num)
-trainer = Trainer_RAHINGEGAN(netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, loss_interval = 150, image_interval = 300)
+
+trainer = Trainer('SGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+trainer = Trainer('LSGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+trainer = Trainer('HINGEGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+trainer = Trainer('WGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = 0.01, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+trainer = Trainer('WGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = 10, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+
+trainer = Trainer('RASGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+trainer = Trainer('RALSGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+trainer = Trainer('RAHINGEGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
+
+trainer = Trainer('QPGAN', netD, netG, device, trn_dl, lr_D = lr_D, lr_G = lr_G, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 150, image_interval = 300, save_img_dir = 'saved_imges')
 
 trainer.train(5)
 save('saved/cur_state.state', netD, netG, trainer.optimizerD, trainer.optimizerG)
+torch.save(netG.state_dict(), 'saved/cur_state_G.pth')

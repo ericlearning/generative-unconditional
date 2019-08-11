@@ -5,81 +5,106 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.utils.spectral_norm as SpectralNorm
 
+class Nothing(nn.Module):
+	def __init__(self):
+		super(Nothing, self).__init__()
+		
+	def forward(self, x):
+		return x
+
+def get_norm(norm_type, size):
+	if(norm_type == 'batchnorm'):
+		return nn.BatchNorm2d(size)
+	elif(norm_type == 'instancenorm'):
+		return nn.InstanceNorm2d(size)
+
+def get_activation(activation_type):
+	if(activation_type == 'relu'):
+		return nn.ReLU(inplace = True)
+	elif(activation_type == 'leakyrelu'):
+		return nn.LeakyReLU(0.2, inplace = True)
+	elif(activation_type == 'elu'):
+		return nn.ELU(inplace = True)
+	elif(activation_type == 'selu'):
+		return nn.SELU(inplace = True)
+	elif(activation_type == 'prelu'):
+		return nn.PReLU()
+	elif(activation_type == 'tanh'):
+		return nn.Tanh()
+	elif(activation_type == None):
+		return Nothing()
+
 class ConvBlock(nn.Module):
-	def __init__(self, ni, no, ks, stride, pad = None, use_bn = True, use_pixelshuffle = False, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
+	def __init__(self, ni, no, ks, stride, pad = None, use_bn = True, use_sn = False, use_pixelshuffle = False, norm_type = 'batchnorm', activation_type = 'leakyrelu', pad_type = 'Zero'):
 		super(ConvBlock, self).__init__()
 		self.use_bn = use_bn
+		self.use_sn = use_sn
 		self.use_pixelshuffle = use_pixelshuffle
 		self.norm_type = norm_type
+		self.pad_type = pad_type
 
 		if(pad == None):
 			pad = ks // 2 // stride
 
+		ni_ = ni
 		if(use_pixelshuffle):
-			self.conv = nn.Conv2d(ni // 4, no, ks, stride, pad, bias = False)
 			self.pixelshuffle = nn.PixelShuffle(2)
+			ni_ = ni // 4
+		
+		if(pad_type == 'Zero'):
+			self.conv = nn.Conv2d(ni_, no, ks, stride, pad, bias = False)
 		else:
-			self.conv = nn.Conv2d(ni, no, ks, stride, pad, bias = False)
+			self.conv = nn.Sequential(*[
+				nn.ReflectionPad2d(pad),
+				nn.Conv2d(ni_, no, ks, stride, 0, bias = False)
+			])
 
-		if(self.use_bn == True):
-			if(self.norm_type == 'batchnorm'):
-				self.bn = nn.BatchNorm2d(no)
-			elif(self.norm_type == 'instancenorm'):
-				self.bn = nn.InstanceNorm2d(no)
-			elif(self.norm_type == 'spectralnorm'):
-				self.conv = SpectralNorm(self.conv)
+		if(self.use_bn):
+			self.bn = get_norm(norm_type, no)
+		if(self.use_sn):
+			self.conv = SpectralNorm(self.conv)
 
-
-		if(activation_type == 'relu'):
-			self.act = nn.ReLU(inplace = True)
-		elif(activation_type == 'leakyrelu'):
-			self.act = nn.LeakyReLU(0.2, inplace = True)
-		elif(activation_type == 'elu'):
-			self.act = nn.ELU(inplace = True)
-		elif(activation_type == 'selu'):
-			self.act = nn.SELU(inplace = True)
+		self.act = get_activation(activation_type)
 
 	def forward(self, x):
 		out = x
-		if(self.use_pixelshuffle == True):
+		if(self.use_pixelshuffle):
 			out = self.pixelshuffle(out)
 		out = self.conv(out)
-		if(self.use_bn == True and self.norm_type != 'spectralnorm'):
+		if(self.use_bn):
 			out = self.bn(out)
 		out = self.act(out)
 		return out
 
 class DeConvBlock(nn.Module):
-	def __init__(self, ni, no, ks, stride, pad = None, output_pad = 0, use_bn = True, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
+	def __init__(self, ni, no, ks, stride, pad = None, output_pad = 0, use_bn = True, use_sn = False, norm_type = 'batchnorm', activation_type = 'leakyrelu', pad_type = 'Zero'):
 		super(DeConvBlock, self).__init__()
 		self.use_bn = use_bn
+		self.use_sn = use_sn
 		self.norm_type = norm_type
+		self.pad_type = pad_type
 
 		if(pad is None):
 			pad = ks // 2 // stride
 
-		self.deconv = nn.ConvTranspose2d(ni, no, ks, stride, pad, output_padding = output_pad, bias = False)
+		if(pad_type == 'Zero'):
+			self.deconv = nn.ConvTranspose2d(ni, no, ks, stride, pad, output_padding = output_pad, bias = False)
+		else:
+			self.deconv = nn.Sequential(*[
+				nn.ReflectionPad2d(pad),
+				nn.ConvTranspose2d(ni, no, ks, stride, 0, output_padding = output_pad, bias = False)
+			])
 
-		if(self.use_bn == True):
-			if(self.norm_type == 'batchnorm'):
-				self.bn = nn.BatchNorm2d(no)
-			elif(self.norm_type == 'instancenorm'):
-				self.bn = nn.InstanceNorm2d(no)
-			elif(self.norm_type == 'spectralnorm'):
-				self.deconv = SpectralNorm(self.deconv)
+		if(self.use_bn):
+			self.bn = get_norm(norm_type, no)
+		if(self.use_sn):
+			self.deconv = SpectralNorm(self.deconv)
 
-		if(activation_type == 'relu'):
-			self.act = nn.ReLU(inplace = True)
-		elif(activation_type == 'leakyrelu'):
-			self.act = nn.LeakyReLU(0.2, inplace = True)
-		elif(activation_type == 'elu'):
-			self.act = nn.ELU(inplace = True)
-		elif(activation_type == 'selu'):
-			self.act = nn.SELU(inplace = True)
+		self.act = get_activation(activation_type)
 
 	def forward(self, x):
 		out = self.deconv(x)
-		if(self.use_bn == True and self.norm_type != 'spectralnorm'):
+		if(self.use_bn):
 			out = self.bn(out)
 		out = self.act(out)
 		return out
@@ -92,10 +117,8 @@ class UpSample(nn.Module):
 	def forward(self, x):
 		return F.interpolate(x, None, self.scale_factor, 'bilinear', align_corners = True)
 
-# DCGAN Architectures
-
 class DCGAN_D(nn.Module):
-	def __init__(self, sz, nc, ndf = 64, use_sigmoid = True, use_bn = True, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
+	def __init__(self, sz, nc, ndf = 64, use_sigmoid = True, use_bn = True, use_sn = False, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
 		super(DCGAN_D, self).__init__()
 		assert sz > 4, "Image size should be bigger than 4"
 		assert sz & (sz-1) == 0, "Image size should be a power of 2"
@@ -103,18 +126,15 @@ class DCGAN_D(nn.Module):
 		self.nc = nc
 		self.ndf = ndf
 		self.use_bn = use_bn
+		self.use_sn = use_sn
 		self.norm_type = norm_type
 
 		cur_ndf = ndf
-		layers = [ConvBlock(self.nc, self.ndf, 4, 2, use_bn = False, activation_type = activation_type)]
+		layers = [ConvBlock(self.nc, self.ndf, 4, 2, 1, use_bn = False, use_sn = self.use_sn, activation_type = activation_type)]
 		for i in range(int(math.log2(self.sz)) - 3):
-			layers.append(ConvBlock(cur_ndf, cur_ndf * 2, 4, 2, use_bn = self.use_bn, norm_type = norm_type, activation_type = activation_type))
+			layers.append(ConvBlock(cur_ndf, cur_ndf * 2, 4, 2, 1, use_bn = self.use_bn, use_sn = self.use_sn, norm_type = self.norm_type, activation_type = activation_type))
 			cur_ndf *= 2
-
-		if(self.norm_type == 'spectralnorm'):
-			layers.append(SpectralNorm(nn.Conv2d(cur_ndf, 1, 4, 1, 0, bias = False)))
-		else:
-			layers.append(nn.Conv2d(cur_ndf, 1, 4, 1, 0, bias = False))
+		layers.append(ConvBlock(cur_ndf, 1, 4, 1, 0, use_bn = False, use_sn = self.use_sn, activation_type = None))
 
 		self.main = nn.Sequential(*layers)
 		self.sigmoid = nn.Sigmoid()
@@ -127,32 +147,28 @@ class DCGAN_D(nn.Module):
 					m.bias.data.zero_()
 
 	def forward(self, x):
-		# x : (bs, nc, sz, sz)
 		out = self.main(x)
 		if(self.use_sigmoid == True):
 			out = self.sigmoid(out)
-		# out : (bs, 1, 1, 1)
 		return out
 
 class DCGAN_G(nn.Module):
-	def __init__(self, sz, nz, nc, ngf = 64, use_bn = True, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
+	def __init__(self, sz, nz, nc, ngf = 64, use_bn = True, use_sn = False, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
 		super(DCGAN_G, self).__init__()
 		self.sz = sz
 		self.nz = nz
 		self.nc = nc
 		self.ngf = ngf
+		self.use_bn = use_bn
+		self.use_sn = use_sn
 		self.norm_type = norm_type
 
 		cur_ngf = ngf * self.sz // 8
-		layers = [DeConvBlock(self.nz, cur_ngf, 4, 1, 0, use_bn = use_bn, norm_type = norm_type, activation_type = activation_type)]
+		layers = [DeConvBlock(self.nz, cur_ngf, 4, 1, 0, use_bn = self.use_bn, use_sn = self.use_sn, norm_type = self.norm_type, activation_type = activation_type)]
 		for i in range(int(math.log2(self.sz)) - 3):
-			layers.append(DeConvBlock(cur_ngf, cur_ngf // 2, 4, 2, use_bn = use_bn, norm_type = norm_type, activation_type = activation_type))
+			layers.append(DeConvBlock(cur_ngf, cur_ngf // 2, 4, 2, 1, use_bn = self.use_bn, use_sn = self.use_sn, norm_type = self.norm_type, activation_type = activation_type))
 			cur_ngf = cur_ngf // 2
-
-		if(self.norm_type == 'spectralnorm'):
-			layers.extend([SpectralNorm(nn.ConvTranspose2d(self.ngf, self.nc, 4, 2, 1, bias = False)), nn.Tanh()])
-		else:
-			layers.extend([nn.ConvTranspose2d(self.ngf, self.nc, 4, 2, 1, bias = False), nn.Tanh()])
+		layers.append(DeConvBlock(self.ngf, self.nc, 4, 2, 1, use_bn = False, use_sn = self.use_sn, activation_type = 'tanh'))
 
 		self.main = nn.Sequential(*layers)
 		for m in self.modules():
@@ -162,30 +178,26 @@ class DCGAN_G(nn.Module):
 					m.bias.data.zero_()
 					
 	def forward(self, x):
-		# x : (bs, nz, 1, 1)
 		out = self.main(x)
-		# out : (bs, nc, sz, sz)
 		return out
 
 class DCGAN_G_ResizedConv(nn.Module):
-	def __init__(self, sz, nz, nc, ngf = 64, use_bn = True, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
+	def __init__(self, sz, nz, nc, ngf = 64, use_bn = True, use_sn = False, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
 		super(DCGAN_G_ResizedConv, self).__init__()
 		self.sz = sz
 		self.nz = nz
 		self.nc = nc
 		self.ngf = ngf
+		self.use_bn = use_bn
+		self.use_sn = use_sn
 		self.norm_type = norm_type
 
 		cur_ngf = ngf * self.sz // 8
-		layers = [ConvBlock(self.nz, cur_ngf, 4, 1, 3, use_bn = use_bn, norm_type = norm_type, activation_type = activation_type), UpSample()]
+		layers = [ConvBlock(self.nz, cur_ngf, 4, 1, 3, use_bn = self.use_bn, use_sn = self.use_sn, norm_type = norm_type, activation_type = activation_type), UpSample()]
 		for i in range(int(math.log2(self.sz)) - 3):
-			layers.extend([ConvBlock(cur_ngf, cur_ngf // 2, 3, 1, 1, use_bn = use_bn, norm_type = norm_type, activation_type = activation_type), UpSample()])
+			layers.extend([ConvBlock(cur_ngf, cur_ngf // 2, 3, 1, 1, use_bn = self.use_bn, use_sn = self.use_sn, norm_type = norm_type, activation_type = activation_type), UpSample()])
 			cur_ngf = cur_ngf // 2
-
-		if(self.norm_type == 'spectralnorm'):
-			layers.extend([SpectralNorm(nn.Conv2d(self.ngf, self.nc, 3, 1, 1, bias = False)), nn.Tanh()])
-		else:
-			layers.extend([nn.Conv2d(self.ngf, self.nc, 3, 1, 1, bias = False), nn.Tanh()])
+		layers.append(ConvBlock(self.ngf, self.nc, 3, 1, 1, use_bn = False, use_sn = self.use_sn, activation_type = 'tanh'))
 
 		self.main = nn.Sequential(*layers)
 		for m in self.modules():
@@ -195,30 +207,26 @@ class DCGAN_G_ResizedConv(nn.Module):
 					m.bias.data.zero_()
 
 	def forward(self, x):
-		# x : (bs, nz, 1, 1)
 		out = self.main(x)
-		# out : (bs, nc, sz, sz)
 		return out
 
 class DCGAN_G_PixelShuffle(nn.Module):
-	def __init__(self, sz, nz, nc, ngf = 64, use_bn = True, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
+	def __init__(self, sz, nz, nc, ngf = 64, use_bn = True, use_sn = False, norm_type = 'batchnorm', activation_type = 'leakyrelu'):
 		super(DCGAN_G_PixelShuffle, self).__init__()
 		self.sz = sz
 		self.nz = nz
 		self.nc = nc
 		self.ngf = ngf
+		self.use_bn = use_bn
+		self.use_sn = use_sn
 		self.norm_type = norm_type
 
 		cur_ngf = ngf * self.sz // 8
-		layers = [ConvBlock(self.nz, cur_ngf, 4, 1, 3, use_bn = use_bn, use_pixelshuffle = False, norm_type = norm_type, activation_type = activation_type)]
+		layers = [ConvBlock(self.nz, cur_ngf, 4, 1, 3, use_bn = self.use_bn, use_sn = self.use_sn, use_pixelshuffle = False, norm_type = norm_type, activation_type = activation_type)]
 		for i in range(int(math.log2(self.sz)) - 3):
-			layers.append(ConvBlock(cur_ngf, cur_ngf // 2, 3, 1, 1, use_bn = use_bn, use_pixelshuffle = True, norm_type = norm_type, activation_type = activation_type))
+			layers.extend([ConvBlock(cur_ngf, cur_ngf // 2, 3, 1, 1, use_bn = self.use_bn, use_sn = self.use_sn, use_pixelshuffle = True, norm_type = norm_type, activation_type = activation_type)])
 			cur_ngf = cur_ngf // 2
-		
-		if(self.norm_type == 'spectralnorm'):
-			layers.extend([nn.PixelShuffle(2), SpectralNorm(nn.Conv2d(self.ngf // 4, self.nc, 3, 1, 1, bias = False)), nn.Tanh()])
-		else:
-			layers.extend([nn.PixelShuffle(2), nn.Conv2d(self.ngf // 4, self.nc, 3, 1, 1, bias = False), nn.Tanh()])
+		layers.append(ConvBlock(self.ngf, self.nc, 3, 1, 1, use_bn = False, use_sn = self.use_sn, use_pixelshuffle = True, activation_type = 'tanh'))
 
 		self.main = nn.Sequential(*layers)
 		for m in self.modules():
@@ -228,11 +236,8 @@ class DCGAN_G_PixelShuffle(nn.Module):
 					m.bias.data.zero_()
 
 	def forward(self, x):
-		# x : (bs, nz, 1, 1)
 		out = self.main(x)
-		# out : (bs, nc, sz, sz)
 		return out
-
 
 class Reshape(nn.Module):
 	def __init__(self, shape):

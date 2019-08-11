@@ -123,6 +123,7 @@ def preprocess_audio(input_dir, output_dir, min_sample_num):
 def get_sample_images_list(mode, inputs):
 	if(mode == 'Unsupervised'):
 		fixed_noise, netG = inputs[0], inputs[1]
+		netG.eval()
 		with torch.no_grad():
 			sample_fake_images = netG(fixed_noise).detach().cpu().numpy()
 			sample_images_list = []
@@ -130,8 +131,11 @@ def get_sample_images_list(mode, inputs):
 				cur_img = (sample_fake_images[j] + 1) / 2.0
 				sample_images_list.append(cur_img.transpose(1, 2, 0))
 
+		netG.train()
+
 	if(mode == 'Unsupervised_Audio'):
 		fixed_noise, netG = inputs[0], inputs[1]
+		netG.eval()
 		with torch.no_grad():
 			sample_fake_images = netG(fixed_noise).detach().cpu().numpy()
 			sample_images_list = []
@@ -139,4 +143,32 @@ def get_sample_images_list(mode, inputs):
 				cur_audio = (sample_fake_images[j] * 32768.0).astype(np.int16)
 				sample_images_list.append(cur_audio)
 
+		netG.train()
+
 	return sample_images_list
+
+def get_require_type(loss_type):
+	if(loss_type == 'SGAN' or loss_type == 'LSGAN' or loss_type == 'HINGEGAN' or loss_type == 'WGAN'):
+		require_type = 0
+	elif(loss_type == 'RASGAN' or loss_type == 'RALSGAN' or loss_type == 'RAHINGEGAN'):
+		require_type = 1
+	elif(loss_type == 'QPGAN'):
+		require_type = 2
+	else:
+		require_type = -1
+	return require_type
+
+def get_gan_loss(device, loss_type):
+	loss_dict = {'SGAN':SGAN, 'LSGAN':LSGAN, 'HINGEGAN':HINGEGAN, 'WGAN':WGAN, 'RASGAN':RASGAN, 'RALSGAN':RALSGAN, 'RAHINGEGAN':RAHINGEGAN, 'QPGAN':QPGAN}
+	require_type = get_require_type(loss_type)
+
+	if(require_type == 0):
+		loss = loss_dict[loss_type](device)
+	elif(require_type == 1):
+		loss = loss_dict[loss_type](device)
+	elif(require_type == 2):
+		loss = loss_dict[loss_type](device, 'L1')
+	else:
+		loss = None
+
+	return loss
