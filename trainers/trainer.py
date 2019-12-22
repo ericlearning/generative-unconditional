@@ -14,7 +14,7 @@ from losses.losses import *
 
 class Trainer():
 	def __init__(self, loss_type, netD, netG, device, train_dl, lr_D = 0.0002, lr_G = 0.0002, resample = True, weight_clip = None, use_gradient_penalty = False, loss_interval = 50, image_interval = 50, save_img_dir = 'saved_images/'):
-		self.loss_type = loss_type
+		self.loss_type, self.device = loss_type, device
 		self.require_type = get_require_type(self.loss_type)
 		self.loss = get_gan_loss(self.device, self.loss_type)
 
